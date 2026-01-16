@@ -1,0 +1,161 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["relationJoins"]
+}
+
+// ============================================================================
+// Better Auth Core Tables
+// ============================================================================
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()"))
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  sessions Session[]
+  accounts Account[]
+  members  Member[]
+  apiKeys  ApiKey[]
+
+  @@map("users")
+}
+
+model Session {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()"))
+  expiresAt            DateTime  @map("expires_at")
+  token                String    @unique
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  ipAddress            String?   @map("ip_address")
+  userAgent            String?   @map("user_agent")
+  userId               String    @map("user_id")
+  activeOrganizationId String?   @map("active_organization_id")
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganization Organization? @relation(fields: [activeOrganizationId], references: [id], onDelete: SetNull)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()"))
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  @@map("verifications")
+}
+
+// ============================================================================
+// Better Auth Organization Plugin Tables
+// ============================================================================
+
+model Organization {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  name      String
+  slug      String    @unique
+  logo      String?
+  metadata  String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  members     Member[]
+  invitations Invitation[]
+  sessions    Session[]
+  apiKeys     ApiKey[]
+
+  @@map("organizations")
+}
+
+model Member {
+  id             String   @id @default(dbgenerated("gen_random_uuid()"))
+  organizationId String   @map("organization_id")
+  userId         String   @map("user_id")
+  role           String   @default("member")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("members")
+}
+
+model Invitation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()"))
+  organizationId String   @map("organization_id")
+  email          String
+  role           String   @default("member")
+  status         String   @default("pending")
+  expiresAt      DateTime @map("expires_at")
+  inviterId      String   @map("inviter_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
+
+// ============================================================================
+// Better Auth API Key Plugin Tables
+// ============================================================================
+
+model ApiKey {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()"))
+  name                String?
+  start               String?
+  prefix              String?
+  key                 String
+  userId              String    @map("user_id")
+  organizationId      String?   @map("organization_id")
+  refillInterval      Int?      @map("refill_interval")
+  refillAmount        Int?      @map("refill_amount")
+  lastRefillAt        DateTime? @map("last_refill_at")
+  enabled             Boolean   @default(true)
+  rateLimitEnabled    Boolean   @default(true) @map("rate_limit_enabled")
+  rateLimitTimeWindow Int?      @map("rate_limit_time_window")
+  rateLimitMax        Int?      @map("rate_limit_max")
+  requestCount        Int       @default(0) @map("request_count")
+  remaining           Int?
+  lastRequest         DateTime? @map("last_request")
+  expiresAt           DateTime? @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  permissions         String?
+  metadata            String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}

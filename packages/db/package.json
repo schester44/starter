@@ -1,0 +1,45 @@
+{
+  "name": "@flightplan/db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./client": {
+      "types": "./src/generated/prisma/client.ts",
+      "default": "./src/generated/prisma/client.ts"
+    },
+    "./generated/*": {
+      "types": "./src/generated/*.ts",
+      "default": "./src/generated/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "reset": "prisma migrate reset --force",
+    "migrate": "prisma migrate",
+    "migrate:test": "NODE_ENV=test prisma migrate",
+    "migrate:deploy": "npx prisma migrate deploy",
+    "generate": "prisma generate",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.0.1",
+    "@prisma/client": "^7.0.1",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^10.0.0",
+    "prisma": "^7.0.1",
+    "typescript": "^5.9.2"
+  }
+}
