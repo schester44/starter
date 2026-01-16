@@ -39,7 +39,13 @@ export const auth = betterAuth({
         // TODO: Send actual email in production
       },
     }),
-    apiKey(),
+    apiKey({
+      schema: {
+        apikey: {
+          modelName: "apiKey",
+        },
+      },
+    }),
   ],
 });
 
